@@ -22,7 +22,8 @@ VARS=($(curl -s https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records 
 RECORD_ID=${VARS[1]}
 DNS_NAME=${VARS[2]}
 OLD_IP=${VARS[3]}
-NEW_IP=$(dig @1.1.1.1 ch txt whoami.cloudflare +short | tr -d '"')
+NEW_IP=$(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
+NEW_6=$(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
 
 if [[ $OPTS == i ]] ; then
   sudo tee /opt/ddns.sh &>/dev/null <<EOF
