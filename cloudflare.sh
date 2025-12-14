@@ -80,7 +80,7 @@ EOT
   echo "exit 0" | sudo tee -a /opt/ddns.sh &>/dev/null
   sudo sed -i 's/##/$/g' /opt/ddns.sh
   sudo chmod +x /opt/ddns.sh
-  (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/10 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
+  (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/5 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
   sudo systemctl restart cron
   echo "Cloudflare DDNS update service is installed"
 fi
