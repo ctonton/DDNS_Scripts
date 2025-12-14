@@ -1,5 +1,5 @@
 #!/bin/bash
-getopts "iu" OPT
+getopts ":iu" OPT
 
 # uninstall
 if [[ $OPT == u ]] ; then
