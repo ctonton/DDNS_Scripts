@@ -12,14 +12,14 @@ fi
 
 # dependencies
 curl -V &>/dev/null && dig -v &>/dev/null && jq -V &>/dev/null
-[[ $? -ne 0 ]] && sudo apt update && sudo apt -y install curl dnsutils jq
+[[ $? -eq 0 ]] || (sudo apt update && sudo apt -y install curl dnsutils jq)
 [[ $? -ne 0 ]] && echo "Failed to install dependencies" && exit 1
 
 # variables
 echo ; read -p "Enter the Cloudflare API Zone ID: " ZON
 echo ; read -p "Enter the Cloudflare API Token: " TOK
 ARY_4=($(curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H "Authorization: Bearer $TOK" |\
-  jq '.result[]|"\(.type) \(.id) \(.name) \(.content)"' | tr -d '"' | grep -e '^A '))
+  jq '.result[]|"\(.type) \(.id) \(.name) \(.content)"' 2>/dev/null | tr -d '"' | grep -e '^A '))
 if [ ! -z $ARY_4 ] ; then
   REC_4=${ARY_4[1]}
   NAM_4=${ARY_4[2]}
@@ -27,7 +27,7 @@ if [ ! -z $ARY_4 ] ; then
   NEW_4=$(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
 fi
 ARY_6=($(curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H "Authorization: Bearer $TOK" |\
-  jq '.result[]|"\(.type) \(.id) \(.name) \(.content)"' | tr -d '"' | grep -e '^AAAA '))
+  jq '.result[]|"\(.type) \(.id) \(.name) \(.content)"' 2>/dev/null | tr -d '"' | grep -e '^AAAA '))
 if [ ! -z $ARY_6 ] ; then
   REC_6=${ARY_6[1]}
   NAM_6=${ARY_6[2]}
@@ -106,6 +106,6 @@ if [ ! -z $ARY_6 ] && [ ! -z $NEW_6 ] ; then
     "content": "'"$NEW_6"'",
     "proxied": false
   }' | grep -q '"success":true'
-  [[ $? -eq 0 ]] && echo "IPv6 updated to $NEW_4" || echo "IPV6 update failed"
+  [[ $? -eq 0 ]] && echo "IPv6 updated to $NEW_6" || echo "IPV6 update failed"
 fi
 exit 0
