@@ -1,7 +1,8 @@
 #!/bin/bash
-getopts "iu" OPTS
+getopts "iu" OPT
 
-if [[ $OPTS == u ]] ; then
+# uninstall
+if [[ $OPT == u ]] ; then
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh') | sudo crontab -
   sudo systemctl restart cron
   sudo rm /opt/ddns.sh
@@ -9,56 +10,102 @@ if [[ $OPTS == u ]] ; then
   exit 0
 fi
 
-curl -V &>/dev/null || DEP=1
-dig -v &>/dev/null || DEP=1
-jq -V &>/dev/null || DEP=1
-[[ $DEP -eq 1 ]] && sudo apt update && sudo apt -y install curl dnsutils jq
+# dependencies
+curl -V &>/dev/null && dig -v &>/dev/null && jq -V &>/dev/null
+[[ $? -ne 0 ]] && sudo apt update && sudo apt -y install curl dnsutils jq
+[[ $? -ne 0 ]] && echo "Failed to install dependencies" && exit 1
 
-echo ; read -p "Enter the Cloudflare API Zone ID: " ZONE_ID
-echo ; read -p "Enter the Cloudflare API Token: " API_TOKEN
-VARS=($(curl -s https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records -H "Authorization: Bearer $API_TOKEN" |\
+# variables
+echo ; read -p "Enter the Cloudflare API Zone ID: " ZON
+echo ; read -p "Enter the Cloudflare API Token: " TOK
+ARY_4=($(curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H "Authorization: Bearer $TOK" |\
   jq '.result[]|"\(.type) \(.id) \(.name) \(.content)"' | tr -d '"' | grep -e '^A '))
-[ -z $VARS ] && echo -e "\nCould not retrieve DNS Records from Cloudflare." && exit 1
-RECORD_ID=${VARS[1]}
-DNS_NAME=${VARS[2]}
-OLD_IP=${VARS[3]}
-NEW_IP=$(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
-NEW_6=$(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
+if [ ! -z $ARY_4 ] ; then
+  REC_4=${ARY_4[1]}
+  NAM_4=${ARY_4[2]}
+  OLD_4=${ARY_4[3]}
+  NEW_4=$(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
+fi
+ARY_6=($(curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H "Authorization: Bearer $TOK" |\
+  jq '.result[]|"\(.type) \(.id) \(.name) \(.content)"' | tr -d '"' | grep -e '^AAAA '))
+if [ ! -z $ARY_6 ] ; then
+  REC_6=${ARY_6[1]}
+  NAM_6=${ARY_6[2]}
+  OLD_6=${ARY_6[3]}
+  NEW_6=$(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
+fi
+[ -z $ARY_4 ] && [ -z $ARY_6 ] && echo "Could not retrieve DNS Records from Cloudflare" && exit 1
 
-if [[ $OPTS == i ]] ; then
-  sudo tee /opt/ddns.sh &>/dev/null <<EOF
-#!/bin/bash
-OLD_IP=$NEW_IP
-NEW_IP=###(dig @1.1.1.1 ch txt whoami.cloudflare +short | tr -d '"')
-[[ ###OLD_IP == ###NEW_IP ]] && exit 0
-curl -s https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $API_TOKEN" -d '{
-  "name": "$DNS_NAME",
-  "ttl": 1,
-  "type": "A",
-  "comment": "Domain verification record",
-  "content": "'"###NEW_IP"'",
-  "proxied": false
-}' | grep -q '"success":true'
-[[ ###? -ne 0 ]] && exit 1
-sed -i "s/^OLD_IP.*/OLD_IP=###NEW_IP/" /opt/ddns.sh
-exit 0
-EOF
-  sudo sed -i 's/###/$/g' /opt/ddns.sh
+# install
+if [[ $OPT == i ]] ; then
+  echo "#!/bin/bash" | sudo tee /opt/ddns.sh &>/dev/null
+  if [ -z $ARY_4 ] ; then
+    echo "DDNS update service will be disabled for IPv4"
+  else
+    sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
+OLD_4=$NEW_4
+NEW_4=!!!(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
+if [[ !!!OLD_4 == !!!NEW_4 ]] ; then
+  curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_4 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
+    "name": "$NAM_4",
+    "ttl": 1,
+    "type": "A",
+    "comment": "Domain verification record",
+    "content": "'"!!!NEW_4"'",
+    "proxied": false
+  }' | grep -q '"success":true'
+  [[ !!!? -eq 0 ]] && sed -i "s/^OLD_4.*/OLD_4=!!!NEW_4/" !!!0
+fi
+EOT
+  fi
+  if [ -z $ARY_6 ] ; then
+    echo "DDNS update service will be disabled for IPv6"
+  else
+    sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
+OLD_6=$NEW_6
+NEW_6=!!!(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
+if [[ !!!OLD_6 != !!!NEW_6 ]] ; then
+  curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_6 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
+    "name": "$NAM_6",
+    "ttl": 1,
+    "type": "AAAA",
+    "comment": "Domain verification record",
+    "content": "'"!!!NEW_6"'",
+    "proxied": false
+  }' | grep -q '"success":true'
+  [[ !!!? -eq 0 ]] && sed -i "s/^OLD_6.*/OLD_6=!!!NEW_6/" !!!0
+fi
+EOT
+  fi
+  echo "exit 0" | sudo tee -a /opt/ddns.sh &>/dev/null
+  sudo sed -i 's/!!!/$/g' /opt/ddns.sh
   sudo chmod +x /opt/ddns.sh
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/10 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
   sudo systemctl restart cron
   echo "Cloudflare DDNS update service is installed"
 fi
 
-[[ $OLD_IP == $NEW_IP ]] && echo "No update needed" && exit 0
-curl -s https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $API_TOKEN" -d '{
-  "name": "'"$DNS_NAME"'",
-  "ttl": 1,
-  "type": "A",
-  "comment": "Domain verification record",
-  "content": "'"$NEW_IP"'",
-  "proxied": false
-}' | grep -q '"success":true'
-[[ $? -ne 0 ]] && echo "IP update unsuccessful" && exit 1
-echo "IP updated to $NEW_IP"
+# update
+if [ ! -z $ARY_4 ] && [ ! -z $NEW_4 ] ; then
+  curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_4 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
+    "name": "'"$NAM_4"'",
+    "ttl": 1,
+    "type": "A",
+    "comment": "Domain verification record",
+    "content": "'"$NEW_4"'",
+    "proxied": false
+  }' | grep -q '"success":true'
+  [[ $? -eq 0 ]] && echo "IPv4 updated to $NEW_4" || echo "IPV4 update failed"
+fi
+if [ ! -z $ARY_6 ] && [ ! -z $NEW_6 ] ; then
+  curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_6 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
+    "name": "'"$NAM_6"'",
+    "ttl": 1,
+    "type": "AAAA",
+    "comment": "Domain verification record",
+    "content": "'"$NEW_6"'",
+    "proxied": false
+  }' | grep -q '"success":true'
+  [[ $? -eq 0 ]] && echo "IPv6 updated to $NEW_4" || echo "IPV6 update failed"
+fi
 exit 0
