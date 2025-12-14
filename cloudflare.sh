@@ -40,7 +40,7 @@ fi
 if [[ $OPT == i ]] ; then
   sudo tee /opt/ddns.sh &>/dev/null <<EOT
 #!/bin/bash
-TTR=$(($(date +%s) + 604800)
+TTR=$(($(date +%s) + 604800))
 [[ ##TTR -ge ##(date +%s) ]] && RUN=1
 EOT
   if [ -z $ARY_4 ] ; then
