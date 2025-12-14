@@ -25,12 +25,12 @@ REC_4=$(curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H "
 REC_6=$(curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H "Authorization: Bearer $TOK" | jq '.result[]|"\(.type) \(.id)"' 2>/dev/null | tr -d '"' | grep -e '^AAAA ' | cut -d ' ' -f 2)
 
 # setup
-[ ! -z $REC_4 ] && curl https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_4 -X DELETE -H "Authorization: Bearer $TOK" &>/dev/null
-[ ! -z $REC_6 ] && curl https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_6 -X DELETE -H "Authorization: Bearer $TOK" &>/dev/null
+[ ! -z $REC_4 ] && curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_4 -X DELETE -H "Authorization: Bearer $TOK" &>/dev/null
+[ ! -z $REC_6 ] && curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_6 -X DELETE -H "Authorization: Bearer $TOK" &>/dev/null
 if [ -z $NEW_4 ] ; then
   echo "No public IPv4 address found so DDNS will be disabled for IPv4"
 else
-  curl https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
+  curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
     "name": "@",
     "ttl": 1,
     "type": "A",
@@ -45,7 +45,7 @@ fi
 if [ -z $NEW_6 ] ; then
   echo "No public IPv6 address found so DDNS will be disabled for IPv6"
 else
-  curl https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
+  curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
     "name": "@",
     "ttl": 1,
     "type": "AAAA",
