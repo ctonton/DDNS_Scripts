@@ -38,14 +38,18 @@ fi
 
 # install
 if [[ $OPT == i ]] ; then
-  echo "#!/bin/bash" | sudo tee /opt/ddns.sh &>/dev/null
+  sudo tee /opt/ddns.sh &>/dev/null <<EOT
+#!/bin/bash
+TTR=$(($(date +%s) + 604800)
+[[ ##TTR -ge ##(date +%s) ]] && RUN=1
+EOT
   if [ -z $ARY_4 ] ; then
     echo "DDNS update service will be disabled for IPv4"
   else
     sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
 OLD_4=$NEW_4
 NEW_4=##(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
-if [[ ##OLD_4 == ##NEW_4 ]] ; then
+if [[ ##OLD_4 != ##NEW_4 || ##RUN == 1 ]] ; then
   curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_4 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
     "name": "$NAM_4",
     "ttl": 1,
@@ -54,7 +58,7 @@ if [[ ##OLD_4 == ##NEW_4 ]] ; then
     "content": "'"##NEW_4"'",
     "proxied": false
   }' | grep -q '"success":true'
-  [[ ##? -eq 0 ]] && sed -i "s/^OLD_4.*/OLD_4=##NEW_4/" ##0
+  [[ ##? -eq 0 ]] && sed -i "s/^OLD_4.*/OLD_4=##NEW_4/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
 fi
 EOT
   fi
@@ -64,7 +68,7 @@ EOT
     sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
 OLD_6=$NEW_6
 NEW_6=##(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
-if [[ ##OLD_6 != ##NEW_6 ]] ; then
+if [[ ##OLD_6 != ##NEW_6 || ##RUN == 1 ]] ; then
   curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_6 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{
     "name": "$NAM_6",
     "ttl": 1,
@@ -73,7 +77,7 @@ if [[ ##OLD_6 != ##NEW_6 ]] ; then
     "content": "'"##NEW_6"'",
     "proxied": false
   }' | grep -q '"success":true'
-  [[ ##? -eq 0 ]] && sed -i "s/^OLD_6.*/OLD_6=##NEW_6/" ##0
+  [[ ##? -eq 0 ]] && sed -i "s/^OLD_6.*/OLD_6=##NEW_6/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
 fi
 EOT
   fi
