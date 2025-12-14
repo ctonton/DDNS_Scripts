@@ -5,7 +5,7 @@ getopts ":iu" OPT
 if [[ $OPT == u ]] ; then
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh') | sudo crontab -
   sudo systemctl restart cron
-  sudo rm /opt/ddns.sh
+  sudo rm -f /opt/ddns.sh
   echo "Cloudflare DDNS update service is uninstalled"
   exit 0
 fi
