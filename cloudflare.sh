@@ -6,7 +6,7 @@ if [[ $OPT == u ]] ; then
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh') | sudo crontab -
   sudo systemctl restart cron
   sudo rm -f /opt/ddns.sh
-  echo "Cloudflare DDNS update service is uninstalled"
+  echo "DDNS update service is uninstalled"
   exit 0
 fi
 
@@ -86,6 +86,6 @@ EOT
   sudo chmod +x /opt/ddns.sh
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/5 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
   sudo systemctl restart cron
-  echo "Cloudflare DDNS update service is installed"
+  echo "DDNS update service is installed"
 fi
 exit 0
