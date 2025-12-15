@@ -18,21 +18,15 @@ curl -V &>/dev/null && dig -v &>/dev/null
 # variables
 echo ; read -p "Enter the Token from Duck DNS: " TOK
 echo ; read -p "Enter the domain name to update: " DOM
-NEW_4=$(dig -4 TXT +short +tries=1 o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | sed '/;;/d;s/"//g')
-NEW_6=$(dig -6 TXT +short +tries=1 o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | sed '/;;/d;s/"//g')
-[ -z $NEW_4 ] && [ -z $NEW_6 ] && echo "Could not detect any public IP address" && exit 1
+NEW_4=$(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
+NEW_6=$(dig -6 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
 
 # setup
-if [ -z $NEW_4 ] ; then
-  echo "No public IPv4 address found so DDNS will be disabled for IPv4"
-else
-  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4" | grep -q 'OK' && echo "IPv4 successfully set to $NEW_4"
-fi
-
 if [ -z $NEW_6 ] ; then
   echo "No public IPv6 address found so DDNS will be disabled for IPv6"
+  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4" | grep -q 'OK' && echo "IPv4 successfully set to $NEW_4"
 else
-  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ipv6=$NEW_6" | grep -q 'OK' && echo "IPv6 successfully set to $NEW_6"
+  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4&ipv6=$NEW_6" | grep -q 'OK' && echo -e "IPv4 successfully set to $NEW_4/nIPv6 successfully set to $NEW_6"
 fi
 
 # install
@@ -41,28 +35,28 @@ if [[ $OPT == i ]] ; then
 #!/bin/bash
 TTR=$(($(date +%s) + 604800))
 [[ ##(date +%s) -ge ##TTR ]] && RUN=1
-EOT
-  if [ ! -z $NEW_4 ] ; then
-    sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
 OLD_4=$NEW_4
-NEW_4=##(dig -4 TXT +short +tries=1 o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | sed '/;;/d;s/"//g')
-if [[ ##OLD_4 != ##NEW_4 || ##RUN == 1 ]] && [ ! -z ##NEW_4 ] ; then
-  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=##NEW_4" | grep -q 'OK'
-  [[ ##? -eq 0 ]] && sed -i "s/^OLD_4.*/OLD_4=##NEW_4/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
-fi
+NEW_4=##(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
+[ -z ##NEW_4 ] && exit 1
 EOT
-  fi
-  if [ ! -z $NEW_6 ] ; then
+  if [ -z $NEW_6 ] ; then
+    sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
+[[ ##OLD_4 == ##NEW_4 || ##RUN != 1 ]] && exit 0
+curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=##NEW_4" | grep -q 'OK' || exit 1
+sed -i "s/^OLD_4.*/OLD_4=##NEW_4/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
+exit 0
+EOT
+  else
     sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
 OLD_6=$NEW_6
-NEW_6=##(dig -4 TXT +short +tries=1 o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | sed '/;;/d;s/"//g')
-if [[ ##OLD_6 != ##NEW_6 || ##RUN == 1 ]] && [ ! -z ##NEW_6 ] ; then
-  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=##NEW_6" | grep -q 'OK'
-  [[ ##? -eq 0 ]] && sed -i "s/^OLD_6.*/OLD_6=##NEW_6/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
-fi
+NEW_6=##(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
+[ -z ##NEW_6 ] && exit 1
+[[ ##OLD_4 == ##NEW_4 && ##OLD_6 == ##NEW_6 && ##RUN != 1 ]] && exit 0
+curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=##NEW_6" | grep -q 'OK' || exit 1
+sed -i "s/^OLD_4.*/OLD_4=##NEW_4/;s/^OLD_6.*/OLD_6=##NEW_6/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
+exit 0
 EOT
   fi
-  echo "exit 0" | sudo tee -a /opt/ddns.sh &>/dev/null
   sudo sed -i 's/##/$/g' /opt/ddns.sh
   sudo chmod +x /opt/ddns.sh
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/5 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
