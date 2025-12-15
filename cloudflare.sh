@@ -65,7 +65,7 @@ EOT
     sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
 OLD_4=$NEW_4
 NEW_4=##(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
-if [[ ##OLD_4 != ##NEW_4 || ##RUN == 1 ]] ; then
+if [[ ##OLD_4 != ##NEW_4 || ##RUN == 1 ]] && [ ! -z ##NEW_4 ] ; then
   curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_4 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{ "content": "'"##NEW_4"'" }' | grep -q '"success":true'
   [[ ##? -eq 0 ]] && sed -i "s/^OLD_4.*/OLD_4=##NEW_4/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
 fi
@@ -75,7 +75,7 @@ EOT
     sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
 OLD_6=$NEW_6
 NEW_6=##(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
-if [[ ##OLD_6 != ##NEW_6 || ##RUN == 1 ]] ; then
+if [[ ##OLD_6 != ##NEW_6 || ##RUN == 1 ]] && [ ! -z ##NEW_6 ] ; then
   curl -s https://api.cloudflare.com/client/v4/zones/$ZON/dns_records/$REC_6 -X PATCH -H 'Content-Type: application/json' -H "Authorization: Bearer $TOK" -d '{ "content": "'"##NEW_6"'" }' | grep -q '"success":true'
   [[ ##? -eq 0 ]] && sed -i "s/^OLD_6.*/OLD_6=##NEW_6/;s/^TTR.*/TTR=##((##(date +%s) + 604800))/" ##0
 fi
