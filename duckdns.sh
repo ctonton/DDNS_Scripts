@@ -6,27 +6,29 @@ if [[ $OPT == u ]] ; then
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh') | sudo crontab -
   sudo systemctl restart cron
   sudo rm -f /opt/ddns.sh
-  echo "DDNS update service is uninstalled"
+  echo "DDNS update service is uninstalled."
   exit 0
 fi
 
 # dependencies
 curl -V &>/dev/null && dig -v &>/dev/null
 [[ $? -eq 0 ]] || (sudo apt update && sudo apt -y install curl dnsutils)
-[[ $? -ne 0 ]] && echo "Failed to install dependencies" && exit 1
+[[ $? -ne 0 ]] && echo "Failed to install dependencies." && exit 1
 
 # variables
 echo ; read -p "Enter the Token from Duck DNS: " TOK
 echo ; read -p "Enter the domain name to update: " DOM
-NEW_4=$(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
-NEW_6=$(dig -6 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
+NEW_4=$(dig -4 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
+NEW_6=$(dig -6 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
 
 # setup
 if [ -z $NEW_6 ] ; then
-  echo "No public IPv6 address found so DDNS will be disabled for IPv6"
-  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4" | grep -q 'OK' && echo "IPv4 successfully set to $NEW_4"
+  echo "No public IPv6 address found. DDNS will be disabled for IPv6."
+  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4" | grep -q 'OK' && echo "IPv4 successfully set to $NEW_4."
+  [[ $? != 0 ]] && echo "IP update was unsuccessful. Service will not be installed." && exit 1
 else
-  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4&ipv6=$NEW_6" | grep -q 'OK' && echo -e "IPv4 successfully set to $NEW_4/nIPv6 successfully set to $NEW_6"
+  curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4&ipv6=$NEW_6" | grep -q 'OK' && echo -e "IPv4 successfully set to $NEW_4./nIPv6 successfully set to $NEW_6."
+  [[ $? != 0 ]] && echo "IP update was unsuccessful. Service will not be installed." && exit 1
 fi
 
 # install
