@@ -22,8 +22,8 @@ curl -V &>/dev/null && dig -v &>/dev/null
 # variables
 echo ; read -p "Enter the Token from Duck DNS: " TOK
 echo ; read -p "Enter the domain name to update: " DOM
-[[ $VER == 6 ]] || NEW_4=$(dig -4 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
-[[ $VER == 4 ]] || NEW_6=$(dig -6 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
+[[ $VER == 6 ]] || NEW_4=$(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
+[[ $VER == 4 ]] || NEW_6=$(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
 [[ -z $NEW_4 && -z $NEW_6 ]] && echo "No public IP address found." && exit 1
 
 # setup
@@ -53,8 +53,8 @@ EOT
 TTR=
 OLD_4=
 OLD_6=
-NEW_4=$(dig -4 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
-NEW_6=$(dig -6 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
+NEW_4=$(dig @1.1.1.1 whoami.cloudflare txt ch -4 +short +tries=1 | sed '/;;/d;s/"//g')
+NEW_6=$(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | sed '/;;/d;s/"//g')
 [[ -z $NEW_4 && -z $NEW_6 ]] && exit 1
 [[ $(date +%s) -ge $TTR ]] && RUN=1
 [[ $OLD_4 == $NEW_4 && $OLD_6 == $NEW_6 && $RUN != 1 ]] && exit 0
