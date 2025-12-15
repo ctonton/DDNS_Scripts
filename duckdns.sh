@@ -29,12 +29,12 @@ echo ; read -p "Enter the domain name to update: " DOM
 if [ -z $NEW_6 ] ; then
   [[ $VER == 4 ]] && echo "DDNS is disabled for IPv6." || echo "No public IPv6 address found. DDNS will be disabled for IPv6."
   curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4" | grep -q 'OK' && echo "IPv4 successfully set to $NEW_4."
-  [[ $? != 0 ]] echo "IP update was unsuccessful. Service will not be installed." && exit 1
+  [[ $? != 0 ]] $$ echo "IP update was unsuccessful. Service will not be installed." && exit 1
 fi
 if [ -z $NEW_4 ] ; then
   [[ $VER == 6 ]] && echo "DDNS is disabled for IPv4." || echo "No public IPv4 address found. DDNS will be disabled for IPv4."
   curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ipv6=$NEW_6" | grep -q 'OK' && echo "IPv6 successfully set to $NEW_6."
-  [[ $? != 0 ]] echo "IP update was unsuccessful. Service will not be installed." && exit 1
+  [[ $? != 0 ]] && echo "IP update was unsuccessful. Service will not be installed." && exit 1
 fi
 if [[ ! -z $NEW_4 && ! -z $NEW_6 ]] ; then
   curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4&ipv6=$NEW_6" | grep -q 'OK' && echo -e "IPv4 successfully set to $NEW_4./nIPv6 successfully set to $NEW_6."
