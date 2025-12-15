@@ -58,9 +58,9 @@ NEW_6=$(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | 
 [[ -z $NEW_4 && -z $NEW_6 ]] && exit 1
 [[ $(date +%s) -ge $TTR ]] && RUN=1
 [[ $OLD_4 == $NEW_4 && $OLD_6 == $NEW_6 && $RUN != 1 ]] && exit 0
-[[ ! -z $NEW_4 && -z $NEW_6 ]] && curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4" | grep -q 'OK'\
+[ -z $NEW_6 ] && curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4" | grep -q 'OK'\
   && sed -i "s/^OLD_4.*/OLD_4=$NEW_4/;s/^TTR.*/TTR=$(($(date +%s) + 604800))/" $0 || exit 1
-[[ -z $NEW_4 && ! -z $NEW_6 ]] && curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ipv6=$NEW_6" | grep -q 'OK'\
+[ -z $NEW_4 ] && curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ipv6=$NEW_6" | grep -q 'OK'\
   && sed -i "s/^OLD_6.*/OLD_6=$NEW_6/;s/^TTR.*/TTR=$(($(date +%s) + 604800))/" $0 || exit 1
 [[ ! -z $NEW_4 && ! -z $NEW_6 ]] && curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4&ipv6=$NEW_6" | grep -q 'OK'\
   && sed -i "s/^OLD_4.*/OLD_4=$NEW_4/;s/^OLD_6.*/OLD_6=$NEW_6/;s/^TTR.*/TTR=$(($(date +%s) + 604800))/" $0 || exit 1
