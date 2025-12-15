@@ -42,7 +42,7 @@ if [[ ! -z $NEW_4 && ! -z $NEW_6 ]] ; then
 fi
 
 # install
-if [[ $OPT == i ]] ; then
+if [[ $OPT != "?" ]] ; then
   sudo tee /opt/ddns.sh &>/dev/null <<'EOF'
 #!/bin/bash
 TTR=
