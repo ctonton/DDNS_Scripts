@@ -38,7 +38,7 @@ if [[ $OPT == i ]] ; then
 TTR=$(($(date +%s) + 604800))
 [[ ##(date +%s) -ge ##TTR ]] && RUN=1
 OLD_4=$NEW_4
-NEW_4=##(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
+NEW_4=##(dig -4 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
 [ -z ##NEW_4 ] && exit 1
 EOT
   if [ -z $NEW_6 ] ; then
@@ -51,7 +51,7 @@ EOT
   else
     sudo tee -a /opt/ddns.sh &>/dev/null <<EOT
 OLD_6=$NEW_6
-NEW_6=##(dig -4 TXT +short o-o.myaddr.l.google.com @ns1.google.com 2>/dev/null | tr -d '"')
+NEW_6=##(dig -6 TXT o-o.myaddr.l.google.com @ns1.google.com +short +tries=1 | sed '/;;/d;s/"//g')
 [ -z ##NEW_6 ] && exit 1
 [[ ##OLD_4 == ##NEW_4 && ##OLD_6 == ##NEW_6 && ##RUN != 1 ]] && exit 0
 curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=##NEW_6" | grep -q 'OK' || exit 1
