@@ -43,8 +43,12 @@ fi
 
 # install
 if [[ $OPT != "?" ]] ; then
-  sudo tee /opt/ddns.sh &>/dev/null <<'EOF'
+  sudo tee /opt/ddns.sh &>/dev/null <<EOT
 #!/bin/bash
+DOM=$DOM
+TOK=$TOK
+EOT
+  sudo tee -a /opt/ddns.sh &>/dev/null <<'EOF'
 TTR=
 OLD_4=
 OLD_6=
