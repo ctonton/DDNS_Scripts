@@ -10,6 +10,7 @@ if [[ $OPT == u ]] ; then
   sudo systemctl restart cron
   sudo rm -f /opt/ddns.sh
   echo "DDNS update service is uninstalled."
+  rm $0
   exit 0
 fi
 
@@ -71,5 +72,6 @@ EOF
   (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/5 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
   sudo systemctl restart cron
   echo "DDNS update service is installed."
+  rm $0
 fi
 exit 0
