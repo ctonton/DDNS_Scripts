@@ -22,8 +22,8 @@ curl -V &>/dev/null && dig -v &>/dev/null
 # variables
 echo ; read -p "Enter the Token from Duck DNS: " TOK
 echo ; read -p "Enter the domain name to update: " DOM
-[[ $VER == 6 ]] || NEW_4=$(dig +short +tries=1 A myip.opendns.com @208.67.222.222 | sed '/^;;/d')
-[[ $VER == 4 ]] || NEW_6=$(dig +short +tries=1 AAAA myip.opendns.com @2620:119:35::35 | sed '/^;;/d')
+[[ $VER == 6 ]] || NEW_4=$(dig @208.67.222.222 myip.opendns.com A in -4 +short +tries=1 | sed '/^;;/d')
+[[ $VER == 4 ]] || NEW_6=$(dig @2620:119:35::35 myip.opendns.com AAAA in -6 +short +tries=1 | sed '/^;;/d')
 [[ -z $NEW_4 && -z $NEW_6 ]] && echo "No public IP address found." && exit 1
 
 # setup
@@ -53,8 +53,8 @@ EOT
 TTR=
 OLD_4=
 OLD_6=
-NEW_4=$(dig +short +tries=1 A myip.opendns.com @208.67.222.222 | sed '/^;;/d')
-NEW_6=$(dig +short +tries=1 AAAA myip.opendns.com @2620:119:35::35 | sed '/^;;/d')
+NEW_4=$(dig @208.67.222.222 myip.opendns.com A in -4 +short +tries=1 | sed '/^;;/d')
+NEW_6=$(dig @2620:119:35::35 myip.opendns.com AAAA in -6 +short +tries=1 | sed '/^;;/d')
 [[ -z $NEW_4 && -z $NEW_6 ]] && exit 1
 [[ $(date +%s) -ge $TTR ]] && RUN=1
 [[ $OLD_4 == $NEW_4 && $OLD_6 == $NEW_6 && $RUN != 1 ]] && exit 0
