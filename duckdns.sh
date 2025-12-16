@@ -41,15 +41,15 @@ if [[ ! -z $NEW_4 && ! -z $NEW_6 ]] ; then
   curl -s "https://www.duckdns.org/update?domains=$DOM&token=$TOK&ip=$NEW_4&ipv6=$NEW_6" | grep -q 'OK' && echo -e "IPv4 successfully set to $NEW_4./nIPv6 successfully set to $NEW_6."
   [[ $? != 0 ]] && echo "IP update was unsuccessful. Service will not be installed." && exit 1
 fi
+[[ $OPT == "?" ]] && exit 0
 
 # install
-if [[ $OPT != "?" ]] ; then
-  sudo tee /opt/ddns.sh &>/dev/null <<EOT
+sudo tee /opt/ddns.sh &>/dev/null <<EOT
 #!/bin/bash
 DOM=$DOM
 TOK=$TOK
 EOT
-  sudo tee -a /opt/ddns.sh &>/dev/null <<'EOF'
+sudo tee -a /opt/ddns.sh &>/dev/null <<'EOF'
 TTR=
 OLD_4=
 OLD_6=
@@ -66,12 +66,11 @@ NEW_6=$(dig @2606:4700:4700::1111 whoami.cloudflare txt ch -6 +short +tries=1 | 
   && sed -i "s/^OLD_4.*/OLD_4=$NEW_4/;s/^OLD_6.*/OLD_6=$NEW_6/;s/^TTR.*/TTR=$(($(date +%s) + 604800))/" $0 || exit 1
 exit 0
 EOF
-  [ -z $NEW_4 ] && sudo sed -i 's/^NEW_4=.*/NEW_4=/' /opt/ddns.sh
-  [ -z $NEW_6 ] && sudo sed -i 's/^NEW_6=.*/NEW_6=/' /opt/ddns.sh
-  sudo chmod +x /opt/ddns.sh
-  (sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/5 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
-  sudo systemctl restart cron
-  echo "DDNS update service is installed."
-  rm $0
-fi
+[ -z $NEW_4 ] && sudo sed -i 's/^NEW_4=.*/NEW_4=/' /opt/ddns.sh
+[ -z $NEW_6 ] && sudo sed -i 's/^NEW_6=.*/NEW_6=/' /opt/ddns.sh
+sudo chmod +x /opt/ddns.sh
+(sudo crontab -l 2>/dev/null | grep -v 'ddns.sh' ; echo "*/5 * * * * /opt/ddns.sh &>/dev/null") | sudo crontab -
+sudo systemctl restart cron
+echo "DDNS update service is installed."
+rm $0
 exit 0
